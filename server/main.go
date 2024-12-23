@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"time"
@@ -17,11 +16,19 @@ type DolarValue struct {
 }
 
 func main() {
+	http.HandleFunc("/", serverHandler)
+	http.ListenAndServe(":8080", nil)
+}
+
+func serverHandler(w http.ResponseWriter, r *http.Request) {
 	bid, err := getActualDolarValue()
 	if err != nil {
-		panic(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
-	return bid
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(bid)
 }
 
 func getActualDolarValue() (DolarValue, error) {
@@ -41,7 +48,6 @@ func getActualDolarValue() (DolarValue, error) {
 		return DolarValue{}, err
 	}
 	var bid DolarValue
-	fmt.Println(string(res))
 	err = json.Unmarshal(res, &bid)
 	if err != nil {
 		return DolarValue{}, err
